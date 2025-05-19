@@ -39,10 +39,26 @@ import { auth, database } from "../config/firebaseElements";
 import { onAuthStateChanged } from "firebase/auth";
 import EmployeeCard from "../components/EmployeeCard";
 
+/**
+ * function used to create the scanData object which populates each table line
+ * @param {*} uid
+ * @param {*} name
+ * @param {*} date
+ * @param {*} location
+ * @param {*} ph
+ * @param {*} turbidity
+ * @param {*} conductivity
+ * @returns scanData object
+ */
 function ScanData(uid, name, date, location, ph, turbidity, conductivity) {
   return { uid, name, date, location, ph, turbidity, conductivity };
 }
 
+/**
+ * function used to get the user name from th UID stored in the scanData
+ * @param {*} uid
+ * @returns the user name as a string
+ */
 async function getUserName(uid) {
   const userRef = ref(database, `users/${uid}`);
   const snapshot = await get(userRef);
@@ -52,6 +68,14 @@ async function getUserName(uid) {
   return "";
 }
 
+/**
+ * function used to check the values in the standards exact;y the same to the android app
+ * @param {*} ph
+ * @param {*} turbidity
+ * @param {*} conductivity
+ * @param {*} theme
+ * @returns theme color used to draw the specific table line accordingly
+ */
 function checkValues(ph, turbidity, conductivity, theme) {
   const phThreshhold = 7.5;
   if (
