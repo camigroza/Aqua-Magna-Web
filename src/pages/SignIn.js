@@ -22,14 +22,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { get, ref } from "firebase/database";
 import CloseIcon from "@mui/icons-material/Close";
 
-/**
- * page for the Login part of the app.
- * it has fields for email and password
- * it checks if the user exists in Auth when the login button is pressed
- * it redirects the user to thr sign up page when the sign up button is pressed
- * it redirects the user to the index page if the user exists and an Auth instance is created
- * @returns page populated with the appbar where the app icon and name sits and a paper with the fields and the buttons explained above
- */
 export default function SignIn() {
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = prefersDarkMode ? darkTheme : lightTheme;
@@ -40,15 +32,8 @@ export default function SignIn() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [isSignedIn, setIsSignedIn] = useState(false);
+
   const navigate = useNavigate();
-
-  const handleEmailChange = (newEmail) => {
-    setEmail(newEmail);
-  };
-
-  const handlePasswordChange = (newPassword) => {
-    setPassword(newPassword);
-  };
 
   const handleSignIn = async () => {
     setLoading(true);
@@ -66,12 +51,14 @@ export default function SignIn() {
         const snapshot = await get(companyRef);
         if (snapshot.exists()) {
           navigate("/");
-        } else throw new Error("Account is not a company");
+        } else {
+          throw new Error("Account is not a company");
+        }
       }
     } catch (error) {
       console.error("Error signing in:", error.message);
       setSnackbarMessage(
-        "Problem while signing in! Make sure the account is created and it is a company account!"
+        "Sign-in failed. Make sure this is a valid company account."
       );
       setOpenSnackbar(true);
     }
@@ -79,9 +66,7 @@ export default function SignIn() {
   };
 
   const handleCloseSnackbar = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
+    if (reason === "clickaway") return;
     setOpenSnackbar(false);
   };
 
@@ -89,7 +74,6 @@ export default function SignIn() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsSignedIn(!!user);
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -115,7 +99,7 @@ export default function SignIn() {
           </Link>
           <Typography
             variant="h6"
-            style={{ flexGrow: 1, color: theme.palette.surface.onMain }}
+            sx={{ flexGrow: 1, color: theme.palette.surface.onMain }}
           >
             Aqua Magna
           </Typography>
@@ -124,67 +108,69 @@ export default function SignIn() {
           </IconButton>
         </Toolbar>
       </AppBar>
+
       <Box
-        style={{
-          position: "fixed", // Apply fixed positioning
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+        sx={{
+          minHeight: "100vh",
           backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('background.jpg')`,
           backgroundSize: "cover",
           backgroundPosition: "center top",
-          zIndex: -1, // Ensure the background is behind other content
+          py: { xs: 8, sm: 10 },
+          px: 2,
           display: "flex",
-          flexDirection: "column",
           justifyContent: "center",
-          alignItems: "center",
+          alignItems: "flex-start",
         }}
       >
         <Paper
           elevation={10}
-          style={{
-            padding: 24,
-            width: 300,
+          sx={{
+            p: 3,
+            width: "100%",
+            maxWidth: 400,
             backgroundColor: theme.palette.secondary.container,
-            borderRadius: "5%",
+            borderRadius: 3,
+            mx: "auto",
           }}
         >
           <Avatar
             alt="Aqua Magna"
             src="logo512.png"
-            style={{
+            sx={{
               width: 70,
               height: 70,
-              marginTop: "auto",
-              marginLeft: "auto",
-              marginRight: "auto",
-              marginBottom: "20px",
+              mx: "auto",
+              mb: 2,
             }}
           />
           <Typography variant="h4" align="center" gutterBottom>
             Welcome back!
           </Typography>
-          <Email onChange={handleEmailChange} value={email} />
-          <Password onChange={handlePasswordChange} />
+
+          <Email onChange={(val) => setEmail(val)} value={email} />
+          <Password onChange={(val) => setPassword(val)} />
+
           <Button
             fullWidth
             variant="contained"
             color="primary"
-            style={{ marginTop: "24px", borderRadius: "20" }}
+            sx={{ mt: 3, borderRadius: 2 }}
             onClick={handleSignIn}
-            disabled={loading}
+            disabled={loading || !email || !password}
           >
             {loading ? <CircularProgress size={24} /> : "Sign In"}
           </Button>
+
           <Button
             fullWidth
             variant="text"
-            style={{ marginTop: "16px", marginBottom: "20px" }}
-            href="/signUp"
+            sx={{ mt: 2, mb: 2 }}
+            component={Link}
+            to="/signUp"
           >
             New company? Sign Up!
           </Button>
+
           <Snackbar
             open={openSnackbar}
             autoHideDuration={3000}
