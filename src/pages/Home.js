@@ -231,7 +231,7 @@ export default function Home() {
                   stroke={theme.palette.primary.main}
                   name="pH"
                 />
-                <ReferenceArea y1={0} y2={1} fill="blue" fillOpacity={0.1} />
+                <ReferenceArea y1={0} y2={5} fill="blue" fillOpacity={0.1} />
                 <Line
                   type="monotone"
                   dataKey="turbidity"
