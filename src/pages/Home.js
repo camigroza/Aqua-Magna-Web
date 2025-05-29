@@ -17,7 +17,6 @@ import {
   Button,
   Popover,
   Box,
-  Divider,
   Card,
   CardContent,
 } from "@mui/material";
@@ -39,26 +38,12 @@ import { auth, database } from "../config/firebaseElements";
 import { onAuthStateChanged } from "firebase/auth";
 import EmployeeCard from "../components/EmployeeCard";
 
-/**
- * function used to create the scanData object which populates each table line
- * @param {*} uid
- * @param {*} name
- * @param {*} date
- * @param {*} location
- * @param {*} ph
- * @param {*} turbidity
- * @param {*} conductivity
- * @returns scanData object
- */
+/** scan data object creator */
 function ScanData(uid, name, date, location, ph, turbidity, conductivity) {
   return { uid, name, date, location, ph, turbidity, conductivity };
 }
 
-/**
- * function used to get the user name from th UID stored in the scanData
- * @param {*} uid
- * @returns the user name as a string
- */
+/** get user's name by uid */
 async function getUserName(uid) {
   const userRef = ref(database, `users/${uid}`);
   const snapshot = await get(userRef);
@@ -68,14 +53,7 @@ async function getUserName(uid) {
   return "";
 }
 
-/**
- * function used to check the values in the standards exact;y the same to the android app
- * @param {*} ph
- * @param {*} turbidity
- * @param {*} conductivity
- * @param {*} theme
- * @returns theme color used to draw the specific table line accordingly
- */
+/** table row color based on standards */
 function checkValues(ph, turbidity, conductivity, theme) {
   const phThreshhold = 7.5;
   if (
@@ -95,7 +73,8 @@ function checkValues(ph, turbidity, conductivity, theme) {
 
 export default function Home() {
   const [rows, setRows] = useState([]);
-  const [companyName, setCompanyName] = useState("");
+  const [companyName, setCompanyName] = useState(null);
+  const [userRole, setUserRole] = useState("");
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = prefersDarkMode ? darkTheme : lightTheme;
   const [anchorEl, setAnchorEl] = useState(null);
@@ -104,19 +83,60 @@ export default function Home() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const fetchCompany = async () => {
-          const companyRef = ref(database, `companies/${user.uid}`);
-          const snapshot = await get(companyRef);
-          if (snapshot.exists()) {
-            setCompanyName(snapshot.val().name);
+        const uid = user.uid;
+
+        const checkUserType = async () => {
+          const companyRef = ref(database, `companies/${uid}`);
+          const userRef = ref(database, `users/${uid}`);
+
+          const [companySnap, userSnap] = await Promise.all([
+            get(companyRef),
+            get(userRef),
+          ]);
+
+          if (companySnap.exists()) {
+            setUserRole("Company");
+            setCompanyName(companySnap.val().name);
+          } else if (userSnap.exists()) {
+            setUserRole("User");
+            setCompanyName(null); // important: reset pentru ca alt useEffect să nu ruleze
+            const scanRef = ref(database, "scans");
+
+            onValue(scanRef, async (snapshot) => {
+              const allScans = snapshot.val();
+              const userScans = [];
+
+              for (let id in allScans) {
+                const scan = allScans[id];
+                if (scan.user === uid) {
+                  const userName = await getUserName(uid);
+                  userScans.unshift(
+                    ScanData(
+                      scan.user,
+                      userName,
+                      scan.date,
+                      scan.location,
+                      scan.ph,
+                      scan.turbidity,
+                      scan.conductivity
+                    )
+                  );
+                }
+              }
+
+              setRows(userScans);
+            });
           }
         };
-        fetchCompany();
+
+        checkUserType();
       }
     });
+
     return () => unsubscribe();
   }, []);
 
+  // Load scans for company
   useEffect(() => {
     if (companyName) {
       const scansRef = ref(database, "scans");
@@ -156,16 +176,6 @@ export default function Home() {
   const handlePopoverClose = () => setAnchorEl(null);
   const open = Boolean(anchorEl);
 
-  // Prepare data for chart
-  const chartData = [...rows].map((row, index) => ({
-    index: index + 1,
-    name: row.name,
-    date: row.date,
-    pH: row.ph,
-    Turbidity: row.turbidity,
-    Conductivity: row.conductivity,
-  }));
-
   return (
     <ThemeProvider theme={theme}>
       <AppBar
@@ -186,6 +196,12 @@ export default function Home() {
           >
             Aqua Magna
           </Typography>
+          {userRole && (
+            <Typography
+              variant="body2"
+              sx={{ mr: 2, color: theme.palette.primary.main }}
+            ></Typography>
+          )}
           <Button href="/profile" sx={{ color: theme.palette.primary.main }}>
             Profile
           </Button>

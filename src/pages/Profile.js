@@ -129,13 +129,11 @@ export default function Profile() {
 
   const renderCompanyFields = () => (
     <>
-      <Profile onChange={setName} value={name} />
+      <Company onChange={setName} value={name} />
       <Address onChange={setAddress} value={address} />
       <City onChange={setCity} value={city} />
       <Country onChange={setCountry} value={country} />
       <Email onChange={setEmail} value={email} />
-      <Company onChange={setCompany} value={company} />
-      <PhoneNumber onChange={setPhone} value={phone} />
     </>
   );
 
