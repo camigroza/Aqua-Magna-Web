@@ -18,7 +18,7 @@ import * as React from "react";
  * @param {*} param0
  * @returns FormControl used for password
  */
-export default function Password({ onChange }) {
+export default function Password({ onChange, name = "" }) {
   const [showPassword, setShowPassword] = React.useState(false);
   const [password, setPassword] = React.useState("");
 
@@ -41,6 +41,7 @@ export default function Password({ onChange }) {
         id="outlined-adornment-password"
         type={showPassword ? "text" : "password"}
         value={password}
+        name={name}
         onChange={handleChangePassword}
         startAdornment={
           <InputAdornment position="start">
@@ -55,7 +56,7 @@ export default function Password({ onChange }) {
               onMouseDown={handleMouseDownPassword}
               edge="end"
             >
-              {showPassword ? <VisibilityOff /> : <Visibility />}
+              {showPassword ? <Visibility /> : <VisibilityOff />}
             </IconButton>
           </InputAdornment>
         }

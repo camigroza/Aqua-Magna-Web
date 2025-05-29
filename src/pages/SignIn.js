@@ -19,13 +19,14 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, database } from "../config/firebaseElements";
 import { Link, useNavigate } from "react-router-dom";
-import { get, ref } from "firebase/database";
+import { get, ref, set } from "firebase/database";
 import CloseIcon from "@mui/icons-material/Close";
 
 export default function SignIn() {
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = prefersDarkMode ? darkTheme : lightTheme;
 
+  const [accountType, setAccountType] = useState(null); // "company" | "user"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,11 @@ export default function SignIn() {
 
   const navigate = useNavigate();
 
+  const isFormValid = email && password;
+
   const handleSignIn = async () => {
+    if (!isFormValid) return;
+
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -51,23 +56,17 @@ export default function SignIn() {
         const snapshot = await get(companyRef);
         if (snapshot.exists()) {
           navigate("/");
-        } else {
-          throw new Error("Account is not a company");
-        }
+        } else throw new Error("Account is not a company");
       }
     } catch (error) {
       console.error("Error signing in:", error.message);
       setSnackbarMessage(
-        "Sign-in failed. Make sure this is a valid company account."
+        "Problem while signing in! Make sure the account is created and it is a company account!"
       );
       setOpenSnackbar(true);
     }
-    setLoading(false);
-  };
 
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === "clickaway") return;
-    setOpenSnackbar(false);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -81,7 +80,32 @@ export default function SignIn() {
     if (isSignedIn) {
       navigate("/");
     }
-  }, [isSignedIn, navigate]);
+  }, [isSignedIn]);
+
+  const handleCloseSnackbar = () => setOpenSnackbar(false);
+
+  const renderAccountChoice = () => (
+    <Paper elevation={10} sx={{ p: 4, textAlign: "center", borderRadius: 4 }}>
+      <Typography variant="h5" gutterBottom>
+        Choose Account Type To Login
+      </Typography>
+      <Box display="flex" justifyContent="center" gap={2} mt={3}>
+        <Button variant="contained" onClick={() => setAccountType("company")}>
+          Company
+        </Button>
+        <Button variant="outlined" onClick={() => setAccountType("user")}>
+          User
+        </Button>
+      </Box>
+    </Paper>
+  );
+
+  const renderForm = () => (
+    <>
+      <Email onChange={setEmail} value={email} />
+      <Password onChange={setPassword} value={password} name="new-password" />
+    </>
+  );
 
   return (
     <ThemeProvider theme={theme}>
@@ -112,71 +136,85 @@ export default function SignIn() {
       <Box
         sx={{
           minHeight: "100vh",
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('background.jpg')`,
+          backgroundImage:
+            "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('background.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center top",
           py: { xs: 8, sm: 10 },
           px: 2,
           display: "flex",
           justifyContent: "center",
-          alignItems: "flex-start",
+          alignItems: "center",
         }}
       >
         <Paper
           elevation={10}
           sx={{
-            p: 3,
             width: "100%",
-            maxWidth: 400,
+            maxWidth: 480,
+            borderRadius: 4,
+            p: 3,
             backgroundColor: theme.palette.secondary.container,
-            borderRadius: 3,
-            mx: "auto",
           }}
         >
-          <Avatar
-            alt="Aqua Magna"
-            src="logo512.png"
-            sx={{
-              width: 70,
-              height: 70,
-              mx: "auto",
-              mb: 2,
-            }}
-          />
-          <Typography variant="h4" align="center" gutterBottom>
-            Welcome back!
-          </Typography>
+          {!accountType ? (
+            renderAccountChoice()
+          ) : (
+            <>
+              <Box sx={{ textAlign: "center", mb: 3 }}>
+                <Avatar
+                  src="logo512.png"
+                  sx={{ width: 80, height: 80, mx: "auto", mb: 2 }}
+                />
+                <Typography variant="h5" gutterBottom>
+                  {accountType === "company"
+                    ? "Sign In as a Company"
+                    : "Sign In as a User"}
+                </Typography>
+              </Box>
 
-          <Email onChange={(val) => setEmail(val)} value={email} />
-          <Password onChange={(val) => setPassword(val)} />
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {renderForm()}
 
-          <Button
-            fullWidth
-            variant="contained"
-            color="primary"
-            sx={{ mt: 3, borderRadius: 2 }}
-            onClick={handleSignIn}
-            disabled={loading || !email || !password}
-          >
-            {loading ? <CircularProgress size={24} /> : "Sign In"}
-          </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSignIn}
+                  disabled={loading || !isFormValid}
+                  size="large"
+                  sx={{ mt: 2, borderRadius: "20px" }}
+                >
+                  {loading ? <CircularProgress size={24} /> : "Sign In"}
+                </Button>
 
-          <Button
-            fullWidth
-            variant="text"
-            sx={{ mt: 2, mb: 2 }}
-            component={Link}
-            to="/signUp"
-          >
-            New company? Sign Up!
-          </Button>
+                <Button
+                  component={Link}
+                  to="/signUp"
+                  variant="text"
+                  sx={{ mt: 1 }}
+                >
+                  Are you new to Aqua Magna? Sign Up
+                </Button>
+              </Box>
+            </>
+          )}
 
           <Snackbar
             open={openSnackbar}
-            autoHideDuration={3000}
+            autoHideDuration={4000}
             onClose={handleCloseSnackbar}
             message={snackbarMessage}
             anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+            action={
+              <IconButton
+                size="small"
+                aria-label="close"
+                color="black"
+                onClick={handleCloseSnackbar}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            }
           />
         </Paper>
       </Box>

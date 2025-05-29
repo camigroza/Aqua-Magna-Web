@@ -19,18 +19,20 @@ import Name from "../components/Name";
 import Address from "../components/Address";
 import City from "../components/City";
 import Country from "../components/Country";
+import Company from "../components/Company";
 import { Link, useNavigate } from "react-router-dom";
 import { auth, database } from "../config/firebaseElements";
 import { useEffect, useState } from "react";
 import { get, ref, set } from "firebase/database";
 import { onAuthStateChanged } from "firebase/auth";
 import CloseIcon from "@mui/icons-material/Close";
+import PhoneNumber from "../components/Phone";
 
 /**
- * page used to view and modify the company details.
- * it collects the data about the company from the database and populates the correspondent fields
+ * page used to view and modify the company/user details.
+ * it collects the data about the company/user from the database and populates the correspondent fields
  * it saves the new data in the database when the save button is pressed
- * it disconnects the company from the Auth instance and navigates back to the index page
+ * it disconnects the company/user from the Auth instance and navigates back to the index page
  * @returns page populated with the app bar with the app icon and name and a paper where the fields and buttons are placed
  */
 export default function Profile() {
@@ -38,11 +40,15 @@ export default function Profile() {
   const theme = prefersDarkMode ? darkTheme : lightTheme;
   const navigate = useNavigate();
 
+  const [accountType, setAccountType] = useState(null); // "company" | "user"
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
+  const [company, setCompany] = useState("");
+  const [phone, setPhone] = useState("");
+
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
 
@@ -55,46 +61,63 @@ export default function Profile() {
     auth.signOut().then(() => navigate("/"));
   };
 
-  const handleEmailChange = (newEmail) => setEmail(newEmail);
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        const fetchCompany = async () => {
-          try {
-            const companyRef = ref(database, `companies/${user.uid}`);
-            const snapshot = await get(companyRef);
-            if (snapshot.exists()) {
-              const data = snapshot.val();
-              setName(data.name || "");
-              setAddress(data.address || "");
-              setCity(data.city || "");
-              setCountry(data.country || "");
-              setEmail(data.email || "");
-            } else throw new Error("Account is not a company");
-          } catch (error) {
-            console.error(error.message);
-          }
-        };
-        fetchCompany();
-      } else {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        navigate("/signIn");
+        return;
+      }
+
+      try {
+        const companyRef = ref(database, `companies/${user.uid}`);
+        const userRef = ref(database, `users/${user.uid}`);
+
+        const [companySnap, userSnap] = await Promise.all([
+          get(companyRef),
+          get(userRef),
+        ]);
+
+        if (companySnap.exists()) {
+          const data = companySnap.val();
+          setAccountType("company");
+          setName(data.name || "");
+          setAddress(data.address || "");
+          setCity(data.city || "");
+          setCountry(data.country || "");
+          setEmail(data.email || "");
+          setCompany(data.company || "");
+          setPhone(data.phone || "");
+        } else if (userSnap.exists()) {
+          const data = userSnap.val();
+          setAccountType("user");
+          setName(data.name || "");
+          setEmail(data.email || "");
+          setCompany(data.company || "");
+          setPhone(data.phone || "");
+        } else {
+          throw new Error("User account not found in database.");
+        }
+      } catch (error) {
+        console.error(error.message);
         navigate("/signIn");
       }
     });
+
     return () => unsubscribe();
   }, [navigate]);
 
   const handleSaveDetails = async () => {
     try {
       const user = auth.currentUser;
-      const companiesRef = ref(database, `companies/${user.uid}`);
-      await set(companiesRef, {
-        name,
-        address,
-        city,
-        country,
-        email,
-      });
+      const path = accountType === "company" ? `companies` : `users`;
+      const userRef = ref(database, `${path}/${user.uid}`);
+
+      const userData =
+        accountType === "company"
+          ? { name, address, city, country, email, company, phone }
+          : { name, email, company, phone };
+
+      await set(userRef, userData);
       setSnackbarMessage("Details saved successfully!");
       setOpenSnackbar(true);
     } catch (error) {
@@ -103,6 +126,27 @@ export default function Profile() {
       setOpenSnackbar(true);
     }
   };
+
+  const renderCompanyFields = () => (
+    <>
+      <Profile onChange={setName} value={name} />
+      <Address onChange={setAddress} value={address} />
+      <City onChange={setCity} value={city} />
+      <Country onChange={setCountry} value={country} />
+      <Email onChange={setEmail} value={email} />
+      <Company onChange={setCompany} value={company} />
+      <PhoneNumber onChange={setPhone} value={phone} />
+    </>
+  );
+
+  const renderUserFields = () => (
+    <>
+      <Name onChange={setName} value={name} />
+      <Email onChange={setEmail} value={email} />
+      <Company onChange={setCompany} value={company} />
+      <PhoneNumber onChange={setPhone} value={phone} />
+    </>
+  );
 
   return (
     <ThemeProvider theme={theme}>
@@ -166,18 +210,16 @@ export default function Profile() {
           <Stack spacing={2} alignItems="center">
             <Avatar src="logo512.png" sx={{ width: 56, height: 56 }} />
             <Typography variant="h6" fontWeight={500} align="center">
-              Company Profile
+              {accountType === "company" ? "Company Profile" : "User Profile"}
             </Typography>
             <Divider sx={{ width: "100%" }} />
           </Stack>
 
           <Box mt={3}>
             <Stack spacing={2}>
-              <Name onChange={(val) => setName(val)} value={name} />
-              <Address onChange={(val) => setAddress(val)} value={address} />
-              <City onChange={(val) => setCity(val)} value={city} />
-              <Country onChange={(val) => setCountry(val)} value={country} />
-              <Email onChange={handleEmailChange} value={email} />
+              {accountType === "company"
+                ? renderCompanyFields()
+                : renderUserFields()}
             </Stack>
           </Box>
 

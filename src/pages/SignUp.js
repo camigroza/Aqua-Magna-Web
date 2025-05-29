@@ -1,4 +1,3 @@
-import { ThemeProvider } from "@emotion/react";
 import {
   Avatar,
   Button,
@@ -11,15 +10,12 @@ import {
   IconButton,
   Toolbar,
   AppBar,
+  TextField,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { ThemeProvider } from "@emotion/react";
 import { darkTheme, lightTheme } from "../config/theme";
-import Email from "../components/Email";
-import Password from "../components/Password";
-import Name from "../components/Name";
-import Address from "../components/Address";
-import City from "../components/City";
-import Country from "../components/Country";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -27,41 +23,41 @@ import {
 import { auth, database } from "../config/firebaseElements";
 import { ref, set } from "firebase/database";
 import { Link, useNavigate } from "react-router-dom";
-import CloseIcon from "@mui/icons-material/Close";
 
-/**
- * SignUp page for company registration.
- * Improved UX and styling.
- */
+import Email from "../components/Email";
+import Password from "../components/Password";
+import Name from "../components/Name";
+import Address from "../components/Address";
+import City from "../components/City";
+import Country from "../components/Country";
+import Company from "../components/Company";
+
 export default function SignUp() {
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = prefersDarkMode ? darkTheme : lightTheme;
+  const navigate = useNavigate();
 
-  // Form state
+  const [accountType, setAccountType] = useState(null); // null | "company" | "user"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const navigate = useNavigate();
 
-  // Disable signup if required fields are empty
-  const isFormValid =
-    email.trim() &&
-    password.trim() &&
-    name.trim() &&
-    address.trim() &&
-    city.trim() &&
-    country.trim();
+  const isCompanyFormValid =
+    email && password && name && address && city && country;
+  const isUserFormValid = email && password && name;
 
   const handleSignUp = async () => {
+    const isFormValid =
+      accountType === "company" ? isCompanyFormValid : isUserFormValid;
     if (!isFormValid) return;
+
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -69,32 +65,24 @@ export default function SignUp() {
         email,
         password
       );
-      if (userCredential) {
-        const user = userCredential.user;
-        const userId = user.uid;
-        const companiesRef = ref(database, `companies/${userId}`);
-        await set(companiesRef, {
-          name,
-          address,
-          city,
-          country,
-          email,
-        });
-        navigate("/");
-      }
+      const user = userCredential.user;
+
+      const userId = user.uid;
+      const refPath =
+        accountType === "company" ? `companies/${userId}` : `users/${userId}`;
+      const userData =
+        accountType === "company"
+          ? { name, address, city, country, email }
+          : { name, email, company: "", phone: "" };
+
+      await set(ref(database, refPath), userData);
+      navigate("/");
     } catch (error) {
-      console.error("Error signing up:", error.message);
-      setSnackbarMessage(
-        "Problem creating account! Make sure to use a valid company email."
-      );
+      setSnackbarMessage("Problem creating account. Try again.");
       setOpenSnackbar(true);
+      console.error(error);
     }
     setLoading(false);
-  };
-
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === "clickaway") return;
-    setOpenSnackbar(false);
   };
 
   useEffect(() => {
@@ -108,14 +96,53 @@ export default function SignUp() {
     if (isSignedIn) {
       navigate("/");
     }
-  }, [isSignedIn, navigate]);
+  }, [isSignedIn]);
+
+  const handleCloseSnackbar = () => setOpenSnackbar(false);
+
+  const renderAccountChoice = () => (
+    <Paper elevation={10} sx={{ p: 4, textAlign: "center", borderRadius: 4 }}>
+      <Typography variant="h5" gutterBottom>
+        Choose Account Type To Sign Up
+      </Typography>
+      <Box display="flex" justifyContent="center" gap={2} mt={3}>
+        <Button variant="contained" onClick={() => setAccountType("company")}>
+          Company
+        </Button>
+        <Button variant="outlined" onClick={() => setAccountType("user")}>
+          User
+        </Button>
+      </Box>
+    </Paper>
+  );
+
+  const renderCompanyForm = () => (
+    <>
+      <Box sx={{ display: "flex", gap: 2 }}>
+        <Company onChange={setName} value={name} />
+        <Address onChange={setAddress} value={address} />
+      </Box>
+      <Box sx={{ display: "flex", gap: 2 }}>
+        <City onChange={setCity} value={city} />
+        <Country onChange={setCountry} value={country} />
+      </Box>
+      <Email onChange={setEmail} value={email} />
+      <Password onChange={setPassword} value={password} name="new-password" />
+    </>
+  );
+
+  const renderUserForm = () => (
+    <>
+      <Name onChange={setName} value={name} />
+      <Email onChange={setEmail} value={email} />
+      <Password onChange={setPassword} value={password} name="new-password" />
+    </>
+  );
 
   return (
     <ThemeProvider theme={theme}>
       <AppBar
         position="static"
-        elevation={10}
-        enableColorOnDark
         sx={{ backgroundColor: theme.palette.surface.main }}
       >
         <Toolbar>
@@ -143,7 +170,7 @@ export default function SignUp() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('background.jpg')`,
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('background.jpg')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           zIndex: -1,
@@ -157,7 +184,6 @@ export default function SignUp() {
           justifyContent: "center",
           alignItems: "center",
           px: 2,
-          py: 2,
         }}
       >
         <Paper
@@ -170,55 +196,54 @@ export default function SignUp() {
             backgroundColor: theme.palette.secondary.container,
           }}
         >
-          <Box sx={{ textAlign: "center", mb: 3 }}>
-            <Avatar
-              alt="Aqua Magna"
-              src="logo512.png"
-              sx={{ width: 80, height: 80, mx: "auto", mb: 2 }}
-            />
-            <Typography variant="h4" component="h1" gutterBottom>
-              Register Your Company
-            </Typography>
-          </Box>
+          {!accountType ? (
+            renderAccountChoice()
+          ) : (
+            <>
+              <Box sx={{ textAlign: "center", mb: 3 }}>
+                <Avatar
+                  src="logo512.png"
+                  sx={{ width: 80, height: 80, mx: "auto", mb: 2 }}
+                />
+                <Typography variant="h5" gutterBottom>
+                  {accountType === "company"
+                    ? "Register Your Company"
+                    : "Create User Account"}
+                </Typography>
+              </Box>
 
-          <Box
-            component="form"
-            noValidate
-            autoComplete="off"
-            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-          >
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <Name onChange={setName} value={name} />
-              <Address onChange={setAddress} value={address} />
-            </Box>
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <City onChange={setCity} value={city} />
-              <Country onChange={setCountry} value={country} />
-            </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {accountType === "company"
+                  ? renderCompanyForm()
+                  : renderUserForm()}
 
-            <Email onChange={setEmail} value={email} />
-            <Password onChange={setPassword} value={password} />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSignUp}
+                  disabled={
+                    loading ||
+                    !(accountType === "company"
+                      ? isCompanyFormValid
+                      : isUserFormValid)
+                  }
+                  size="large"
+                  sx={{ mt: 2, borderRadius: "20px" }}
+                >
+                  {loading ? <CircularProgress size={24} /> : "Sign Up"}
+                </Button>
 
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSignUp}
-              disabled={!isFormValid || loading}
-              size="large"
-              sx={{ mt: 2, borderRadius: "20px" }}
-            >
-              {loading ? <CircularProgress size={24} /> : "Create Company"}
-            </Button>
-
-            <Button
-              component={Link}
-              to="/signIn"
-              variant="text"
-              sx={{ mt: 1, mb: 2 }}
-            >
-              Company already created? Sign In!
-            </Button>
-          </Box>
+                <Button
+                  component={Link}
+                  to="/signIn"
+                  variant="text"
+                  sx={{ mt: 1 }}
+                >
+                  Already have an account? Sign In
+                </Button>
+              </Box>
+            </>
+          )}
 
           <Snackbar
             open={openSnackbar}
@@ -230,7 +255,7 @@ export default function SignUp() {
               <IconButton
                 size="small"
                 aria-label="close"
-                color="inherit"
+                color="black"
                 onClick={handleCloseSnackbar}
               >
                 <CloseIcon fontSize="small" />
