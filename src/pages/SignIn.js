@@ -163,7 +163,7 @@ export default function SignIn() {
               sx={{ width: 80, height: 80, mx: "auto", mb: 2 }}
             />
             <Typography variant="h5" gutterBottom>
-              Sign Up
+              Sign In
             </Typography>
 
             <Box display="flex" justifyContent="center" gap={2} mt={2}>
@@ -196,8 +196,8 @@ export default function SignIn() {
               {loading ? <CircularProgress size={24} /> : "Sign In"}
             </Button>
 
-            <Button component={Link} to="/signIn" variant="text" sx={{ mt: 1 }}>
-              Already have an account? Sign In
+            <Button component={Link} to="/signUp" variant="text" sx={{ mt: 1 }}>
+              Are you new to Aqua Magna? Sign Up
             </Button>
           </Box>
 
