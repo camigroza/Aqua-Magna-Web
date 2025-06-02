@@ -114,7 +114,7 @@ export default function Profile() {
 
       const userData =
         accountType === "company"
-          ? { name, address, city, country, email, company, phone }
+          ? { name, address, city, country, email }
           : { name, email, company, phone };
 
       await set(userRef, userData);
@@ -129,7 +129,7 @@ export default function Profile() {
 
   const renderCompanyFields = () => (
     <>
-      <Company onChange={setName} value={name} />
+      <Name onChange={setName} value={name} />
       <Address onChange={setAddress} value={address} />
       <City onChange={setCity} value={city} />
       <Country onChange={setCountry} value={country} />

@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@emotion/react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   useMediaQuery,
   TableContainer,
@@ -79,6 +79,11 @@ export default function Home() {
   const theme = prefersDarkMode ? darkTheme : lightTheme;
   const [anchorEl, setAnchorEl] = useState(null);
   const [hoveredEmployee, setHoveredEmployee] = useState(null);
+  const navigate = useNavigate();
+
+  const handleSignOut = () => {
+    auth.signOut().then(() => navigate("/"));
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -202,8 +207,17 @@ export default function Home() {
               sx={{ mr: 2, color: theme.palette.primary.main }}
             ></Typography>
           )}
+
           <Button href="/profile" sx={{ color: theme.palette.primary.main }}>
             Profile
+          </Button>
+
+          <Button
+            color="error"
+            onClick={handleSignOut}
+            sx={{ borderRadius: 2 }}
+          >
+            Sign Out
           </Button>
         </Toolbar>
       </AppBar>

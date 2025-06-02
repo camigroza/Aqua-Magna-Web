@@ -26,7 +26,7 @@ export default function SignIn() {
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = prefersDarkMode ? darkTheme : lightTheme;
 
-  const [accountType, setAccountType] = useState(null); // "company" | "user"
+  const [accountType, setAccountType] = useState("company");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,7 +61,7 @@ export default function SignIn() {
     } catch (error) {
       console.error("Error signing in:", error.message);
       setSnackbarMessage(
-        "Problem while signing in! Make sure the account is created and it is a company account!"
+        "Problem while signing in! Make sure the account is created and the password is correct!"
       );
       setOpenSnackbar(true);
     }
@@ -84,21 +84,21 @@ export default function SignIn() {
 
   const handleCloseSnackbar = () => setOpenSnackbar(false);
 
-  const renderAccountChoice = () => (
-    <Paper elevation={10} sx={{ p: 4, textAlign: "center", borderRadius: 4 }}>
-      <Typography variant="h5" gutterBottom>
-        Choose Account Type To Login
-      </Typography>
-      <Box display="flex" justifyContent="center" gap={2} mt={3}>
-        <Button variant="contained" onClick={() => setAccountType("company")}>
-          Company
-        </Button>
-        <Button variant="outlined" onClick={() => setAccountType("user")}>
-          User
-        </Button>
-      </Box>
-    </Paper>
-  );
+  // const renderAccountChoice = () => (
+  //   <Paper elevation={10} sx={{ p: 4, textAlign: "center", borderRadius: 4 }}>
+  //     <Typography variant="h5" gutterBottom>
+  //       Choose Account Type To Login
+  //     </Typography>
+  //     <Box display="flex" justifyContent="center" gap={2} mt={3}>
+  //       <Button variant="contained" onClick={() => setAccountType("company")}>
+  //         Company
+  //       </Button>
+  //       <Button variant="outlined" onClick={() => setAccountType("user")}>
+  //         User
+  //       </Button>
+  //     </Box>
+  //   </Paper>
+  // );
 
   const renderForm = () => (
     <>
@@ -157,47 +157,49 @@ export default function SignIn() {
             backgroundColor: theme.palette.secondary.container,
           }}
         >
-          {!accountType ? (
-            renderAccountChoice()
-          ) : (
-            <>
-              <Box sx={{ textAlign: "center", mb: 3 }}>
-                <Avatar
-                  src="logo512.png"
-                  sx={{ width: 80, height: 80, mx: "auto", mb: 2 }}
-                />
-                <Typography variant="h5" gutterBottom>
-                  {accountType === "company"
-                    ? "Sign In as a Company"
-                    : "Sign In as a User"}
-                </Typography>
-              </Box>
+          <Box sx={{ textAlign: "center", mb: 3 }}>
+            <Avatar
+              src="logo512.png"
+              sx={{ width: 80, height: 80, mx: "auto", mb: 2 }}
+            />
+            <Typography variant="h5" gutterBottom>
+              Sign Up
+            </Typography>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {renderForm()}
+            <Box display="flex" justifyContent="center" gap={2} mt={2}>
+              <Button
+                variant={accountType === "company" ? "contained" : "outlined"}
+                onClick={() => setAccountType("company")}
+              >
+                Company
+              </Button>
+              <Button
+                variant={accountType === "user" ? "contained" : "outlined"}
+                onClick={() => setAccountType("user")}
+              >
+                User
+              </Button>
+            </Box>
+          </Box>
 
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSignIn}
-                  disabled={loading || !isFormValid}
-                  size="large"
-                  sx={{ mt: 2, borderRadius: "20px" }}
-                >
-                  {loading ? <CircularProgress size={24} /> : "Sign In"}
-                </Button>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {renderForm()}
 
-                <Button
-                  component={Link}
-                  to="/signUp"
-                  variant="text"
-                  sx={{ mt: 1 }}
-                >
-                  Are you new to Aqua Magna? Sign Up
-                </Button>
-              </Box>
-            </>
-          )}
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSignIn}
+              disabled={loading || !isFormValid}
+              size="large"
+              sx={{ mt: 2, borderRadius: "20px" }}
+            >
+              {loading ? <CircularProgress size={24} /> : "Sign In"}
+            </Button>
+
+            <Button component={Link} to="/signIn" variant="text" sx={{ mt: 1 }}>
+              Already have an account? Sign In
+            </Button>
+          </Box>
 
           <Snackbar
             open={openSnackbar}

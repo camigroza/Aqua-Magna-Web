@@ -10,7 +10,6 @@ import {
   IconButton,
   Toolbar,
   AppBar,
-  TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { ThemeProvider } from "@emotion/react";
@@ -30,14 +29,13 @@ import Name from "../components/Name";
 import Address from "../components/Address";
 import City from "../components/City";
 import Country from "../components/Country";
-import Company from "../components/Company";
 
 export default function SignUp() {
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = prefersDarkMode ? darkTheme : lightTheme;
   const navigate = useNavigate();
 
-  const [accountType, setAccountType] = useState(null); // null | "company" | "user"
+  const [accountType, setAccountType] = useState("company");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -100,26 +98,10 @@ export default function SignUp() {
 
   const handleCloseSnackbar = () => setOpenSnackbar(false);
 
-  const renderAccountChoice = () => (
-    <Paper elevation={10} sx={{ p: 4, textAlign: "center", borderRadius: 4 }}>
-      <Typography variant="h5" gutterBottom>
-        Choose Account Type To Sign Up
-      </Typography>
-      <Box display="flex" justifyContent="center" gap={2} mt={3}>
-        <Button variant="contained" onClick={() => setAccountType("company")}>
-          Company
-        </Button>
-        <Button variant="outlined" onClick={() => setAccountType("user")}>
-          User
-        </Button>
-      </Box>
-    </Paper>
-  );
-
   const renderCompanyForm = () => (
     <>
       <Box sx={{ display: "flex", gap: 2 }}>
-        <Company onChange={setName} value={name} />
+        <Name onChange={setName} value={name} company={true} />
         <Address onChange={setAddress} value={address} />
       </Box>
       <Box sx={{ display: "flex", gap: 2 }}>
@@ -190,60 +172,62 @@ export default function SignUp() {
           elevation={10}
           sx={{
             width: "100%",
-            maxWidth: 480,
+            maxWidth: 500,
             borderRadius: 4,
             p: 3,
             backgroundColor: theme.palette.secondary.container,
+            marginTop: 4,
+            marginBottom: 4,
           }}
         >
-          {!accountType ? (
-            renderAccountChoice()
-          ) : (
-            <>
-              <Box sx={{ textAlign: "center", mb: 3 }}>
-                <Avatar
-                  src="logo512.png"
-                  sx={{ width: 80, height: 80, mx: "auto", mb: 2 }}
-                />
-                <Typography variant="h5" gutterBottom>
-                  {accountType === "company"
-                    ? "Register Your Company"
-                    : "Create User Account"}
-                </Typography>
-              </Box>
+          <Box sx={{ textAlign: "center", mb: 3 }}>
+            <Avatar
+              src="logo512.png"
+              sx={{ width: 80, height: 80, mx: "auto", mb: 2 }}
+            />
+            <Typography variant="h5" gutterBottom>
+              Sign Up
+            </Typography>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {accountType === "company"
-                  ? renderCompanyForm()
-                  : renderUserForm()}
+            <Box display="flex" justifyContent="center" gap={2} mt={2}>
+              <Button
+                variant={accountType === "company" ? "contained" : "outlined"}
+                onClick={() => setAccountType("company")}
+              >
+                Company
+              </Button>
+              <Button
+                variant={accountType === "user" ? "contained" : "outlined"}
+                onClick={() => setAccountType("user")}
+              >
+                User
+              </Button>
+            </Box>
+          </Box>
 
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSignUp}
-                  disabled={
-                    loading ||
-                    !(accountType === "company"
-                      ? isCompanyFormValid
-                      : isUserFormValid)
-                  }
-                  size="large"
-                  sx={{ mt: 2, borderRadius: "20px" }}
-                >
-                  {loading ? <CircularProgress size={24} /> : "Sign Up"}
-                </Button>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {accountType === "company" ? renderCompanyForm() : renderUserForm()}
 
-                <Button
-                  component={Link}
-                  to="/signIn"
-                  variant="text"
-                  sx={{ mt: 1 }}
-                >
-                  Already have an account? Sign In
-                </Button>
-              </Box>
-            </>
-          )}
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSignUp}
+              disabled={
+                loading ||
+                !(accountType === "company"
+                  ? isCompanyFormValid
+                  : isUserFormValid)
+              }
+              size="large"
+              sx={{ mt: 2, borderRadius: "20px" }}
+            >
+              {loading ? <CircularProgress size={24} /> : "Sign Up"}
+            </Button>
+
+            <Button component={Link} to="/signIn" variant="text" sx={{ mt: 1 }}>
+              Already have an account? Sign In
+            </Button>
+          </Box>
 
           <Snackbar
             open={openSnackbar}
